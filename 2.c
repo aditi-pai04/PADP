@@ -1,39 +1,41 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<omp.h>
-#include<math.h>
-#include<string.h>
-#include<stdbool.h>
 
-static inline long mark(bool composite[],long i, long step, long limit) {
-    for(long j=i;j<=limit;++j) {
-        composite[j]=true;
-    }
-    return i;
-}
+void main() {
+    int rows=400,cols=400;
+    int i,j,k;
+    int **matrix1=(int **)malloc(rows*sizeof(int *));
+    int **matrix2=(int **)malloc(rows*sizeof(int *));
+    int **result=(int **)malloc(rows*sizeof(int *));
+    int sum=0,count=0;
+    int num_threads[]={1,2,4,8};
 
-long cache_unfriendly_sieve(long n) {
-    long count=0;
-    bool *composite=(bool *)malloc((n+1)*sizeof(bool));
-    memset(composite,0,(n+1)*sizeof(bool));
-    long limit=(long)sqrt(n);
-    for(long i=2;i<=limit;i++) {
-        if (!composite[i]) mark(composite,i*i,i,n);
+    for(i=0;i<rows;++i) {
+        matrix1[i]=(int *)malloc(cols*sizeof(int));
+        matrix2[i]=(int *)malloc(cols*sizeof(int));
+        result[i]=(int *)malloc(cols*sizeof(int));
     }
-    for(long i=2;i<=n;i++) {
-        if (!composite[i]) count++;
-    }
-    free(composite);
-    return count;
-}
 
-long cache_friendly_sieve(long n) {
-    long limit=(long)sqrt(n);
-    long count=0;
-    bool *small_composite=calloc(limit+1,sizeof(bool));
-    for(long i=2;i*i<=limit;i++) {
-        if (!small_composite[i]) {
-            for(long j=i*i;j<=limit;j+=i) 
+    for(i=0;i<rows;++i) {
+        for(j=0;j<cols;++j) {
+            matrix1[i][j]=count++;
+            matrix2[i][j]=count++;
         }
+    }
+
+    for(int t=0;t<4;++t) {
+        double start=omp_get_wtime();
+        omp_set_num_threads(num_threads[t]);
+        #pragma omp parallel for private(i,j,k,sum)
+        for(i=0;i<rows;++i) {
+            for(j=0;j<cols;++j) {
+                sum=0;
+                for(k=0;k<cols;++k) sum+=matrix1[i][k]*matrix2[k][j];
+                result[i][j]=sum;
+            }
+        }
+        double end=omp_get_wtime();
+        printf("%d\t%f\n",num_threads[t],end-start);
     }
 }

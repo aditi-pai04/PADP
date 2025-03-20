@@ -1,53 +1,43 @@
-#include <stdio.h>
-#include <mpi.h>
-#include <string.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<mpi.h>
+#include<string.h>
 
 #define BUFFER_SIZE 100
 
-int main(int argc, char *argv[])
-{
-    int rank, size;
-    char buffer[BUFFER_SIZE];
+void main(int argc, char *argv[]) {
+    MPI_Init(&argc,&argv);
     MPI_Status status;
+    int rank,size;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    char buffer[BUFFER_SIZE];
+    int i=0;
 
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    if (size != 4) {
-        if (rank == 0) {
-            printf("This program requires exactly 4 processes.\n");
-        }
+    if (size!=4) {
+        if (rank==0) printf("4 processes\n");
         MPI_Finalize();
-        return 1;
+        return;
     }
 
-    if (rank == 0)
-    {
-        printf("Master process 0 starting coordination...\n");
-        for (int i = 1; i < size; i++)
-        {
-            MPI_Recv(buffer, BUFFER_SIZE, MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
-            printf("Master process 0 received message from process %d: %s\n", i, buffer);
+    if (rank==0) {
+        printf("Master coordinating...\n");
+        for(i=1;i<size;++i) {
+            MPI_Recv(buffer,BUFFER_SIZE,MPI_CHAR,i,0,MPI_COMM_WORLD,&status);
+            printf("From %d:%s\n",i,buffer);
         }
-    }
-    else
-    {
-        switch (rank)
-        {
-            case 1:
-                strcpy(buffer, "HELLO");
-                break;
-            case 2:
-                strcpy(buffer, "CSE");
-                break;
-            case 3:
-                strcpy(buffer, "RVCE");
-                break;
-        }
-        MPI_Send(buffer, BUFFER_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
     }
 
+    else {
+        switch (rank) {
+            case 1: strcpy(buffer,"hello");
+            break;
+            case 2: strcpy(buffer,"cse");
+            break;
+            case 3: strcpy(buffer,"rvce");
+            break;
+        }
+        MPI_Send(buffer,BUFFER_SIZE,MPI_CHAR,0,0,MPI_COMM_WORLD);
+    }
     MPI_Finalize();
-    return 0;
 }
